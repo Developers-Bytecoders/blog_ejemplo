@@ -3,19 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use App\Models\Categorias;
 
 class CategoriasController extends Controller{
-
-    // 200 Todo bien
-    // 201 Creado
-    // 204 Eliminado
-    // 202 Aceptado
-    // 404 No encontrado
-    // 401 No autorizado
-    // 400 Datos incorrectos
-
     
     public function index(){ // Vista de lista de categorías
         //return view("categorias.index");
@@ -25,66 +15,65 @@ class CategoriasController extends Controller{
         //return view("categorias.create");
     }
 
-    public function store(Request $request){
+    public function store(Request $request): \Illuminate\Http\JsonResponse{
+        $validator=$this->validate_data($request->all(),[
+            'nombre'=>['max:255','unique:categorias']
+        ]);
+        if($validator!=null){
+            return $this->return_bad_request($validator);
+        }
         try{
-            $validator=Validator::make($request->all(),[
-                'nombre'=>['required','max:255']
-            ]);
-            if($validator->fails()){
-                return response()->json($validator->errors(),400);
-            }
             $categoria=new Categorias();
             $categoria->nombre=$request->nombre;
             $categoria->save();
+            return $this->return_created($categoria);
         }catch(\Exception $e){
-            return response()->json([
-                'error' => "Error al crear la categoría"
-            ],500);
-        }
-        return response()->json($categoria,201);
-    }
-
-    public function show($id){ // Detalles del registro
-        try{
-            $categoria=Categorias::find($id);
-            return response()->json($categoria,200);
-        }catch(\Exception $ex){
-            return response()->json([
-                'error' => "No existe la categoría"
-            ],500);
+            return $this->return_error();
         }
     }
 
-    public function update(Request $request, $id){
+    public function show(int $id=null): \Illuminate\Http\JsonResponse{
         try{
-            $validator=Validator::make($request->all(),[
-                'nombre'=>['max:255']
-            ]);
-            if($validator->fails()){
-                return response()->json($validator->errors(),400);
+            $categoria=$id==null?Categorias::paginate($request->paginate??10):Categorias::find($id);
+            if($categoria==null){
+                return $this->return_not_found();
             }
-            $categoria=Categorias::find($id);
-            $categoria->nombre=$request->nombre;
-            $categoria->save();
-            return response()->json($categoria,200);
+            return $this->return_success_data($categoria);
         }catch(\Exception $ex){
-            return response()->json([
-                'error' => "Error al actualizar"
-            ],500);
+            return $this->return_error();
         }
     }
 
-    public function delete($id){
+    public function update(Request $request, int $id): \Illuminate\Http\JsonResponse{
+        $validator=$this->validate_data($request->all(),[
+            'nombre'=>['max:255','unique:categorias']
+        ]);
+        if($validator!=null){
+            return $this->return_bad_request($validator);
+        }
         try{
             $categoria=Categorias::find($id);
-            $categoria->delete();
-            return response()->json([
-                'message' => "Categoría eliminada"
-            ],200);
+            if($categoria==null){
+                return $this->return_not_found();
+            }
+            $categoria->nombre=$request->nombre??$categoria->nombre;
+            $categoria->save();
+            return $this->return_success_data($categoria);
         }catch(\Exception $ex){
-            return response()->json([
-                'error' => "Error al eliminar"
-            ],500);
+            return $this->return_error();
+        }
+    }
+
+    public function delete(int $id): \Illuminate\Http\JsonResponse{
+        try{
+            $categoria=Categorias::find($id);
+            if($categoria==null){
+                return $this->return_not_found();
+            }
+            $categoria->delete();
+            return $this->return_no_content($categoria);
+        }catch(\Exception $ex){
+            return $this->return_error();
         }
     }
 
