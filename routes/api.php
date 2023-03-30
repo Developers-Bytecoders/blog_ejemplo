@@ -17,6 +17,7 @@ use App\Http\Controllers\CategoriasController;
 
 Route::post('/categoria',[CategoriasController::class,'store']);
 Route::get('/categoria/{id}',[CategoriasController::class,'show']);
+Route::get('/categorias',[CategoriasController::class,'show']);
 Route::put('/categoria/{id}',[CategoriasController::class,'update']);
 Route::delete('/categoria/{id}',[CategoriasController::class,'delete']);
 
